@@ -1,0 +1,921 @@
+<title>NIMCET Tracker</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400..700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+:root{
+  color-scheme:light;
+  --page:#f9f9f7; --surface:#ffffff; --surface-2:#fcfcfb;
+  --ink:#0b0b0b; --ink-soft:#52514e; --muted:#898781;
+  --border:rgba(11,11,11,.10); --border-strong:rgba(11,11,11,.18); --grid:#e1e0d9;
+  --accent:#4a3aa7; --accent-soft:#efeafa; --accent-ink:#ffffff;
+  --math:#2a78d6; --reasoning:#eb6834; --computer:#1baf7a; --english:#eda100;
+  --good:#0ca30c; --good-text:#006300; --warning:#a86a00; --critical:#d03b3b;
+  --font-display:'Fraunces',Georgia,serif;
+  --font-body:'IBM Plex Sans',system-ui,-apple-system,"Segoe UI",sans-serif;
+  --font-mono:'IBM Plex Mono',ui-monospace,"SFMono-Regular",monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --page:#0d0d0d; --surface:#17171a; --surface-2:#1c1c1e;
+    --ink:#ffffff; --ink-soft:#c3c2b7; --muted:#8f8d86;
+    --border:rgba(255,255,255,.10); --border-strong:rgba(255,255,255,.20); --grid:#2c2c2a;
+    --accent:#9085e9; --accent-soft:#241f3d; --accent-ink:#0b0b0b;
+    --math:#3987e5; --reasoning:#d95926; --computer:#199e70; --english:#c98500;
+    --good:#0ca30c; --good-text:#3fce3f; --warning:#fab219; --critical:#e66767;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --page:#0d0d0d; --surface:#17171a; --surface-2:#1c1c1e;
+  --ink:#ffffff; --ink-soft:#c3c2b7; --muted:#8f8d86;
+  --border:rgba(255,255,255,.10); --border-strong:rgba(255,255,255,.20); --grid:#2c2c2a;
+  --accent:#9085e9; --accent-soft:#241f3d; --accent-ink:#0b0b0b;
+  --math:#3987e5; --reasoning:#d95926; --computer:#199e70; --english:#c98500;
+  --good:#0ca30c; --good-text:#3fce3f; --warning:#fab219; --critical:#e66767;
+}
+*{box-sizing:border-box;}
+body{background:var(--page); color:var(--ink); font-family:var(--font-body); padding-inline:16px;}
+h1,h2,h3{font-family:var(--font-display); font-weight:600; margin:0; text-wrap:balance;}
+a{color:inherit;}
+button{font-family:inherit;}
+.wrap{max-width:980px; margin:0 auto; padding-block:20px 64px;}
+
+/* header */
+.topbar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:var(--page); padding-block:14px 0; margin-inline:-16px; padding-inline:16px; border-bottom:1px solid var(--border);}
+.brand{display:flex; align-items:center; gap:10px; margin-bottom:12px;}
+.brand svg{flex:none;}
+.brand-text h1{font-size:1.25rem; letter-spacing:.2px;}
+.brand-text p{margin:1px 0 0; font-size:.72rem; color:var(--muted); letter-spacing:.5px; text-transform:uppercase;}
+.tabs{display:flex; gap:4px; overflow-x:auto; padding-bottom:10px; scrollbar-width:none;}
+.tabs::-webkit-scrollbar{display:none;}
+.tab-btn{flex:none; font-size:.86rem; font-weight:600; color:var(--muted); background:none; border:none; padding:10px 12px; min-height:40px; border-radius:8px 8px 0 0; cursor:pointer; border-bottom:2px solid transparent; white-space:nowrap;}
+.tab-btn:hover{color:var(--ink);}
+.tab-btn.active{color:var(--accent); border-bottom-color:var(--accent);}
+.tab-btn:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+
+section.pane{padding-top:20px;}
+section.pane[hidden]{display:none;}
+
+/* generic pieces */
+.card{background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:18px;}
+.grid{display:grid; gap:14px;}
+.grid-4{grid-template-columns:repeat(4,1fr);}
+.grid-2{grid-template-columns:1fr 1fr;}
+.grid-stats{grid-template-columns:repeat(auto-fit,minmax(136px,1fr));}
+@media (max-width:720px){.grid-4{grid-template-columns:repeat(2,1fr);} .grid-2{grid-template-columns:1fr;}}
+@media (max-width:420px){.grid-stats{grid-template-columns:repeat(2,1fr);}}
+
+.stat-tile{background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:14px 16px;}
+.stat-tile .label{font-size:.72rem; text-transform:uppercase; letter-spacing:.5px; color:var(--muted); margin-bottom:6px;}
+.stat-tile .value{font-family:var(--font-display); font-size:1.6rem; font-variant-numeric:tabular-nums;}
+.stat-tile .sub{font-size:.76rem; color:var(--ink-soft); margin-top:2px;}
+
+.hero{display:flex; gap:20px; align-items:center; flex-wrap:wrap;}
+.hero-count{display:flex; align-items:center; gap:16px;}
+.hero-count .num{font-family:var(--font-display); font-size:3.2rem; line-height:1; font-variant-numeric:tabular-nums;}
+.hero-count .num-label{font-size:.78rem; color:var(--muted); text-transform:uppercase; letter-spacing:.6px;}
+.ring-wrap{display:flex; align-items:center; gap:14px; margin-left:auto;}
+.ring-num{font-family:var(--font-display); font-size:1.7rem;}
+.ring-label{font-size:.76rem; color:var(--muted);}
+.date-edit{display:flex; align-items:center; gap:8px; font-size:.78rem; color:var(--muted); margin-top:10px;}
+.date-edit input{font-family:var(--font-mono); font-size:.8rem; background:var(--surface-2); border:1px solid var(--border); border-radius:6px; padding:4px 6px; color:var(--ink);}
+
+.section-title{font-size:1.02rem; margin-bottom:12px; display:flex; align-items:center; justify-content:space-between; gap:10px;}
+.section-title .hint{font-size:.74rem; font-weight:400; color:var(--muted); font-family:var(--font-body);}
+
+/* subject bars */
+.subj-row{display:flex; align-items:center; gap:12px; padding:9px 0; border-bottom:1px solid var(--grid);}
+.subj-row:last-child{border-bottom:none;}
+.subj-dot{width:10px; height:10px; border-radius:3px; flex:none;}
+.subj-name{font-size:.86rem; font-weight:600; width:190px; flex:none;}
+.subj-track{flex:1; height:8px; border-radius:5px; background:var(--surface-2); border:1px solid var(--border); overflow:hidden;}
+.subj-fill{height:100%; border-radius:5px;}
+.subj-pct{font-family:var(--font-mono); font-size:.78rem; width:74px; text-align:right; flex:none; color:var(--ink-soft);}
+@media (max-width:600px){.subj-name{width:120px; font-size:.78rem;}}
+
+/* weak list / activity */
+.chip-list{display:flex; flex-wrap:wrap; gap:8px;}
+.chip{display:inline-flex; align-items:center; gap:6px; font-size:.78rem; padding:5px 10px; border-radius:999px; border:1px solid var(--border); background:var(--surface-2);}
+.chip .dot{width:7px; height:7px; border-radius:50%;}
+.empty{color:var(--muted); font-size:.85rem; padding:10px 0;}
+
+.activity-row{display:flex; gap:10px; align-items:baseline; padding:7px 0; border-bottom:1px solid var(--grid); font-size:.82rem;}
+.activity-row:last-child{border-bottom:none;}
+.activity-row .d{font-family:var(--font-mono); color:var(--muted); font-size:.72rem; width:74px; flex:none;}
+.activity-row .m{font-family:var(--font-mono); color:var(--ink-soft); font-size:.76rem; margin-left:auto; flex:none;}
+
+/* filters */
+.filter-row{display:flex; gap:6px; flex-wrap:wrap; margin-bottom:16px;}
+.filter-btn{font-size:.78rem; font-weight:600; padding:8px 13px; min-height:34px; border-radius:999px; border:1px solid var(--border); background:var(--surface); color:var(--ink-soft); cursor:pointer;}
+.filter-btn.active{background:var(--accent); color:var(--accent-ink); border-color:var(--accent);}
+
+/* syllabus */
+.subj-block + .subj-block{margin-top:24px;}
+.subj-heading{display:flex; align-items:center; gap:8px; margin-bottom:10px;}
+.subj-heading .bar{width:4px; height:16px; border-radius:2px;}
+.subj-heading h3{font-size:1rem;}
+.subj-heading .q{font-size:.76rem; color:var(--muted); margin-left:4px;}
+
+.topic-card{background:var(--surface); border:1px solid var(--border); border-left:3px solid var(--border-strong); border-radius:10px; padding:14px 16px; margin-bottom:10px;}
+.topic-top{display:flex; align-items:flex-start; justify-content:space-between; gap:10px; flex-wrap:wrap;}
+.topic-name{font-weight:600; font-size:.92rem;}
+.topic-weight{font-family:var(--font-mono); font-size:.72rem; color:var(--muted);}
+.topic-controls{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-top:10px;}
+.status-select{font-size:.78rem; font-family:var(--font-body); font-weight:600; padding:5px 8px; border-radius:7px; border:1px solid var(--border); background:var(--surface-2); color:var(--ink);}
+.mini-track{width:80px; height:6px; border-radius:4px; background:var(--surface-2); border:1px solid var(--border); overflow:hidden;}
+.mini-fill{height:100%; border-radius:4px;}
+.stars{display:inline-flex; gap:1px;}
+.star-btn{background:none; border:none; cursor:pointer; padding:6px 3px; font-size:1.05rem; color:var(--border-strong); line-height:1; min-width:26px; min-height:26px;}
+.star-btn.on{color:var(--accent);}
+.weak-toggle{font-size:.74rem; font-weight:600; padding:7px 10px; border-radius:999px; border:1px solid var(--border); background:var(--surface-2); color:var(--muted); cursor:pointer; min-height:32px;}
+.weak-toggle.on{background:rgba(208,59,59,.12); border-color:var(--critical); color:var(--critical);}
+.revised-row{display:flex; align-items:center; gap:6px; font-size:.74rem; color:var(--muted);}
+.revised-row input{font-family:var(--font-mono); font-size:.74rem; background:var(--surface-2); border:1px solid var(--border); border-radius:6px; padding:3px 5px; color:var(--ink);}
+.topic-notes{width:100%; margin-top:10px; font-family:var(--font-body); font-size:.82rem; background:var(--surface-2); border:1px solid var(--border); border-radius:8px; padding:8px 10px; color:var(--ink); resize:vertical; min-height:36px;}
+.topic-notes::placeholder{color:var(--muted);}
+
+/* forms */
+.form-card{background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:16px; margin-bottom:20px;}
+.form-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:10px;}
+@media (max-width:720px){.form-grid{grid-template-columns:1fr 1fr;}}
+@media (max-width:480px){.form-grid{grid-template-columns:1fr;}}
+.field{display:flex; flex-direction:column; gap:4px;}
+.field label{font-size:.7rem; text-transform:uppercase; letter-spacing:.4px; color:var(--muted);}
+.field input,.field select,.field textarea{font-family:var(--font-body); font-size:.86rem; padding:8px 9px; border-radius:8px; border:1px solid var(--border); background:var(--surface-2); color:var(--ink); min-height:38px;}
+.field input[type="date"],.field input[type="number"]{font-family:var(--font-mono);}
+.field.wide{grid-column:1/-1;}
+.submit-row{display:flex; justify-content:flex-end; margin-top:12px;}
+.btn{font-weight:600; font-size:.84rem; padding:10px 16px; border-radius:9px; border:1px solid var(--accent); background:var(--accent); color:var(--accent-ink); cursor:pointer; min-height:40px;}
+.btn:hover{filter:brightness(1.06);}
+.btn.ghost{background:transparent; color:var(--accent); }
+
+/* resources */
+.res-row{display:flex; align-items:flex-start; gap:12px; padding:12px 0; border-bottom:1px solid var(--grid); flex-wrap:wrap;}
+.res-row:last-child{border-bottom:none;}
+.res-kind{flex:none; font-family:var(--font-mono); font-size:.62rem; font-weight:600; letter-spacing:.4px; text-transform:uppercase; padding:4px 7px; border-radius:6px; background:var(--surface-2); border:1px solid var(--border); color:var(--ink-soft); margin-top:1px;}
+.res-body{flex:1; min-width:180px;}
+.res-title{font-weight:600; font-size:.88rem;}
+.res-title a{color:var(--ink); text-decoration:none; border-bottom:1px solid var(--border-strong);}
+.res-title a:hover{color:var(--accent); border-color:var(--accent);}
+.res-meta{font-size:.74rem; color:var(--muted); margin-top:2px;}
+.res-controls{display:flex; align-items:center; gap:8px; flex:none;}
+.res-status{font-size:.76rem; font-family:var(--font-body); font-weight:600; padding:5px 7px; border-radius:7px; border:1px solid var(--border); background:var(--surface-2); color:var(--ink);}
+
+/* tables/lists */
+.list-row{display:grid; grid-template-columns:90px 1fr 90px 40px; gap:10px; align-items:center; padding:10px 0; border-bottom:1px solid var(--grid); font-size:.84rem;}
+.list-row:last-child{border-bottom:none;}
+.list-row .d{font-family:var(--font-mono); font-size:.76rem; color:var(--ink-soft);}
+.list-row .meta{color:var(--muted); font-size:.76rem;}
+.list-row .mins{font-family:var(--font-mono); text-align:right; color:var(--ink-soft);}
+.del-btn{background:none; border:1px solid var(--border); color:var(--muted); border-radius:6px; width:32px; height:32px; cursor:pointer; font-size:.9rem; justify-self:end;}
+.del-btn.confirm{background:rgba(208,59,59,.12); border-color:var(--critical); color:var(--critical); font-size:.62rem; width:auto; padding:0 8px;}
+@media (max-width:600px){.list-row{grid-template-columns:54px 1fr 32px; gap:8px;} .list-row .mins{display:none;}}
+
+.test-row{display:grid; grid-template-columns:84px 1fr 74px 90px 40px; gap:10px; align-items:center; padding:11px 0; border-bottom:1px solid var(--grid); font-size:.84rem;}
+.test-row:last-child{border-bottom:none;}
+.test-row .d{font-family:var(--font-mono); font-size:.76rem; color:var(--ink-soft);}
+.test-row .score{font-family:var(--font-mono); font-weight:600; text-align:right;}
+.test-row .delta{font-family:var(--font-mono); font-size:.74rem; text-align:right;}
+@media (max-width:640px){.test-row{grid-template-columns:54px 1fr 54px 32px; gap:8px;} .test-row .delta{display:none;}}
+
+/* chart */
+.chart-wrap{position:relative;}
+.chart-tip{position:absolute; pointer-events:none; background:var(--ink); color:var(--page); font-family:var(--font-mono); font-size:.72rem; padding:5px 8px; border-radius:6px; transform:translate(-50%,-115%); white-space:nowrap; opacity:0; transition:opacity .1s;}
+.chart-tip.show{opacity:1;}
+
+.notice{font-size:.78rem; color:var(--muted); background:var(--surface-2); border:1px dashed var(--border-strong); border-radius:10px; padding:9px 12px; margin-bottom:16px;}
+.footnote{font-size:.72rem; color:var(--muted); margin-top:22px; line-height:1.5;}
+
+@media (prefers-reduced-motion:no-preference){
+  .pane{animation:fade .25s ease;}
+  @keyframes fade{from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:translateY(0);}}
+}
+</style>
+
+<div class="topbar">
+  <div class="wrap" style="padding-block:0;">
+    <div class="brand">
+      <svg width="30" height="30" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="15" cy="15" r="13" stroke="var(--accent)" stroke-width="2"/>
+        <circle cx="15" cy="15" r="8" stroke="var(--accent)" stroke-width="2"/>
+        <circle cx="15" cy="15" r="2.6" fill="var(--accent)"/>
+      </svg>
+      <div class="brand-text">
+        <h1>NIMCET Tracker</h1>
+        <p id="examYearLabel">Prep log for NIMCET 2027</p>
+      </div>
+    </div>
+    <nav class="tabs" id="tabs"></nav>
+  </div>
+</div>
+
+<div class="wrap">
+  <section class="pane" id="pane-dashboard"></section>
+  <section class="pane" id="pane-syllabus" hidden></section>
+  <section class="pane" id="pane-log" hidden></section>
+  <section class="pane" id="pane-tests" hidden></section>
+  <section class="pane" id="pane-resources" hidden></section>
+  <p class="footnote">Every change is saved automatically to this artifact. Reopen it any time — on this device or another — and your syllabus status, study log and mock-test history will be right where you left them.</p>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* ---------- domain data ---------- */
+const SUBJECTS = [
+  {key:'math', name:'Mathematics', questions:50, color:'var(--math)'},
+  {key:'reasoning', name:'Analytical Ability & Reasoning', questions:40, color:'var(--reasoning)'},
+  {key:'computer', name:'Computer Awareness', questions:20, color:'var(--computer)'},
+  {key:'english', name:'General English', questions:10, color:'var(--english)'}
+];
+const SUBJECT_MAP = Object.fromEntries(SUBJECTS.map(s=>[s.key,s]));
+
+const DEFAULT_TOPICS = [
+  {id:'set-theory', subject:'math', name:'Set Theory & Logic', weight:8, order:0},
+  {id:'probability-stats', subject:'math', name:'Probability & Statistics', weight:8, order:1},
+  {id:'algebra', subject:'math', name:'Algebra', weight:10, order:2},
+  {id:'coordinate-geometry', subject:'math', name:'Coordinate Geometry', weight:8, order:3},
+  {id:'calculus', subject:'math', name:'Calculus', weight:10, order:4},
+  {id:'trigonometry', subject:'math', name:'Trigonometry', weight:6, order:5},
+  {id:'verbal-reasoning', subject:'reasoning', name:'Verbal Reasoning', weight:8, order:6},
+  {id:'non-verbal-reasoning', subject:'reasoning', name:'Non-verbal Reasoning', weight:7, order:7},
+  {id:'deductive-reasoning', subject:'reasoning', name:'Deductive Reasoning', weight:6, order:8},
+  {id:'inductive-reasoning', subject:'reasoning', name:'Inductive Reasoning', weight:6, order:9},
+  {id:'problem-solving', subject:'reasoning', name:'Problem Solving & Critical Thinking', weight:7, order:10},
+  {id:'data-interpretation', subject:'reasoning', name:'Data Interpretation & Sufficiency', weight:6, order:11},
+  {id:'computer-basics', subject:'computer', name:'Computer Basics & CPU', weight:4, order:12},
+  {id:'data-representation', subject:'computer', name:'Data Representation & Boolean Algebra', weight:5, order:13},
+  {id:'computer-hardware', subject:'computer', name:'Computer Hardware', weight:3, order:14},
+  {id:'computer-software', subject:'computer', name:'Computer Software & OS', weight:4, order:15},
+  {id:'internet-email', subject:'computer', name:'Internet, Email & Online Security', weight:4, order:16},
+  {id:'general-english', subject:'english', name:'General English', weight:10, order:17}
+];
+const TOTAL_WEIGHT = DEFAULT_TOPICS.reduce((a,t)=>a+t.weight,0); // 120
+const STATUS_STEPS = {'not-started':0,'learning':1/3,'practicing':2/3,'mastered':1};
+const STATUS_LABEL = {'not-started':'Not started','learning':'Learning','practicing':'Practicing','mastered':'Mastered'};
+const DEFAULT_EXAM_DATE = '2027-05-30';
+
+/* resources: seeded with verified free, legitimate sources only —
+   no pirated book links, nothing guessed. The form lets the user add their own. */
+const RESOURCE_SUBJECTS = [{key:'general', name:'General / all subjects', color:'var(--accent)'}, ...SUBJECTS];
+const RESOURCE_SUBJECT_MAP = Object.fromEntries(RESOURCE_SUBJECTS.map(s=>[s.key,s]));
+const KIND_LABEL = {video:'Video', pdf:'PDF / Paper', book:'Book', website:'Website'};
+const RES_STATUS_LABEL = {'to-do':'To watch/read','in-progress':'In progress','done':'Done'};
+const DEFAULT_RESOURCES = [
+  {title:'NIMCET official exam portal — syllabus, notices & previous papers', url:'https://nimcet.admissions.nic.in/', kind:'website', subject:'general', notes:'Always check here first for the real 2027 exam date, official syllabus PDF and brochure.'},
+  {title:'NCERT Class 11 & 12 Mathematics textbooks (official, free)', url:'https://ncert.nic.in/textbook.php', kind:'book', subject:'math', notes:'Pick Class XI / XII → Mathematics. Covers Algebra, Calculus, Coordinate Geometry, Trigonometry and Probability directly.'},
+  {title:'NIMCET 2026 free crash course playlist (Maths, Reasoning, English)', url:'https://www.youtube.com/playlist?list=PLw6nNovS7OMk8XnRyasD_LImwkcIFrWRc', kind:'video', subject:'general', notes:'Check upload dates — reuse whatever is still relevant for the 2027 syllabus.'},
+  {title:'IndiaBIX — Logical & Verbal Reasoning practice questions', url:'https://www.indiabix.com/logical-reasoning/questions-and-answers/', kind:'website', subject:'reasoning', notes:'Free, no signup needed. Good for daily practice sets.'},
+  {title:'GeeksforGeeks — Computer Fundamentals tutorial', url:'https://www.geeksforgeeks.org/computer-science-fundamentals/computer-fundamentals-tutorial/', kind:'website', subject:'computer', notes:'Covers CPU, I/O devices, memory — matches the "Computer Basics" topic.'},
+  {title:'GeeksforGeeks — Computer Organization & Architecture', url:'https://www.geeksforgeeks.org/computer-organization-architecture/computer-organization-and-architecture-tutorials/', kind:'website', subject:'computer', notes:'For data representation, binary/hex arithmetic and Boolean algebra.'},
+  {title:'GeeksforGeeks — Operating Systems tutorial', url:'https://www.geeksforgeeks.org/operating-systems/operating-systems/', kind:'website', subject:'computer', notes:'For the Computer Software & OS topic.'},
+  {title:'NIMCET previous year question papers with solutions (free PDFs)', url:'https://testbook.com/nimcet/previous-year-papers', kind:'pdf', subject:'general', notes:'Solve these under timed conditions and log the result in the Mock Tests tab.'}
+];
+
+/* ---------- state ---------- */
+let db=null, userCap=null;
+let state = {
+  topics:{}, logs:[], tests:[], resources:[],
+  settings:{examDate:DEFAULT_EXAM_DATE, isEstimate:true},
+  ready:false, dbAvailable:null
+};
+let currentTab='dashboard';
+let syllabusFilter='all';
+let resourceFilter='all';
+let draft = {}; // in-flight local edits when db is unavailable
+
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function uid(){ return 'id'+Date.now().toString(36)+Math.random().toString(36).slice(2,8); }
+function todayStr(){ const d=new Date(); return d.toISOString().slice(0,10); }
+function fmtDate(s){ if(!s) return '—'; const d=new Date(s+'T00:00:00'); if(isNaN(d)) return s; return d.toLocaleDateString(undefined,{day:'2-digit',month:'short',year:'numeric'}); }
+function fmtDateShort(s){ const d=new Date(s+'T00:00:00'); if(isNaN(d)) return s; return d.toLocaleDateString(undefined,{day:'2-digit',month:'short'}); }
+
+/* ---------- derived stats ---------- */
+function topicsBySubject(key){
+  return Object.entries(state.topics)
+    .filter(([id,t])=>t.subject===key)
+    .sort((a,b)=>(a[1].order??0)-(b[1].order??0));
+}
+function subjectProgressPct(key){
+  const list = topicsBySubject(key).map(e=>e[1]);
+  if(!list.length) return 0;
+  const w = list.reduce((a,t)=>a+(t.weight||1),0);
+  const done = list.reduce((a,t)=>a+(t.weight||1)*(STATUS_STEPS[t.status]??0),0);
+  return w? (done/w*100) : 0;
+}
+function overallProgressPct(){
+  const list = Object.values(state.topics);
+  if(!list.length) return 0;
+  const w = list.reduce((a,t)=>a+(t.weight||1),0);
+  const done = list.reduce((a,t)=>a+(t.weight||1)*(STATUS_STEPS[t.status]??0),0);
+  return w? (done/w*100) : 0;
+}
+function totalHours(){ return state.logs.reduce((a,l)=>a+(Number(l.minutes)||0),0)/60; }
+function hoursBySubject(key){ return state.logs.filter(l=>l.subject===key).reduce((a,l)=>a+(Number(l.minutes)||0),0)/60; }
+function currentStreak(){
+  const days = new Set(state.logs.map(l=>l.date));
+  if(!days.size) return 0;
+  let d = new Date(); d.setHours(0,0,0,0);
+  let streak=0;
+  // allow today to be empty (day in progress) — start counting from today or yesterday
+  let cursor = new Date(d);
+  if(!days.has(cursor.toISOString().slice(0,10))){
+    cursor.setDate(cursor.getDate()-1);
+  }
+  while(days.has(cursor.toISOString().slice(0,10))){
+    streak++; cursor.setDate(cursor.getDate()-1);
+  }
+  return streak;
+}
+function weakTopics(){
+  return Object.entries(state.topics).filter(([id,t])=>t.weak || (t.confidence>0 && t.confidence<=2));
+}
+function testScorePct(t){ return Math.max(0, Math.min(100, (Number(t.total)||0)/480*100)); }
+
+/* ---------- db ---------- */
+async function initDb(){
+  try{
+    const d = await (window.claude && window.claude.use ? window.claude.use('db') : Promise.resolve(null));
+    if(!d){ state.dbAvailable=false; render(); return; }
+    db = d;
+    state.dbAvailable = true;
+    await seedIfNeeded();
+    subscribeAll();
+  }catch(e){ state.dbAvailable=false; render(); }
+}
+async function seedIfNeeded(){
+  try{
+    const topicsCol = db.collection('topics');
+    const snap = await topicsCol.get();
+    if(snap.empty){
+      await Promise.all(DEFAULT_TOPICS.map(t=>topicsCol.doc(t.id).set({
+        subject:t.subject, name:t.name, weight:t.weight, order:t.order,
+        status:'not-started', confidence:0, weak:false, lastRevised:'', notes:''
+      })));
+    }
+    const settingsRef = db.doc('settings/main');
+    const sSnap = await settingsRef.get();
+    if(!sSnap.exists){
+      await settingsRef.set({examDate:DEFAULT_EXAM_DATE, isEstimate:true});
+    }
+    const resCol = db.collection('resources');
+    const rSnap = await resCol.get();
+    if(rSnap.empty){
+      await Promise.all(DEFAULT_RESOURCES.map(r=>resCol.add({...r, status:'to-do'})));
+    }
+  }catch(e){ /* non-fatal; onSnapshot will still reflect whatever exists */ }
+}
+function subscribeAll(){
+  db.collection('topics').onSnapshot(snap=>{
+    const map={};
+    snap.docs.forEach(d=>{ const data=d.data(); if(data) map[d.id]=data; });
+    if(Object.keys(map).length) state.topics=map;
+    state.ready=true;
+    render();
+  }, ()=>{});
+  db.collection('logs').orderBy('date','desc').limit(500).onSnapshot(snap=>{
+    state.logs = snap.docs.map(d=>({id:d.id, ...d.data()}));
+    render();
+  }, ()=>{});
+  db.collection('tests').orderBy('date','desc').limit(200).onSnapshot(snap=>{
+    state.tests = snap.docs.map(d=>({id:d.id, ...d.data()}));
+    render();
+  }, ()=>{});
+  db.doc('settings/main').onSnapshot(snap=>{
+    if(snap.exists) state.settings = {...state.settings, ...snap.data()};
+    render();
+  }, ()=>{});
+  db.collection('resources').onSnapshot(snap=>{
+    state.resources = snap.docs.map(d=>({id:d.id, ...d.data()}));
+    render();
+  }, ()=>{});
+}
+
+/* local fallback seed (only used if db capability unavailable in this view) */
+function localSeed(){
+  const map={};
+  DEFAULT_TOPICS.forEach(t=>{ map[t.id]={subject:t.subject, name:t.name, weight:t.weight, order:t.order, status:'not-started', confidence:0, weak:false, lastRevised:'', notes:''}; });
+  state.topics = map;
+  state.resources = DEFAULT_RESOURCES.map(r=>({id:uid(), ...r, status:'to-do'}));
+  state.ready = true;
+}
+
+/* ---------- writes ---------- */
+async function updateTopic(id, patch){
+  if(db){ try{ await db.collection('topics').doc(id).update(patch); }catch(e){} }
+  else { state.topics[id] = {...state.topics[id], ...patch}; render(); }
+}
+async function addLog(entry){
+  if(db){ try{ await db.collection('logs').add(entry); }catch(e){} }
+  else { state.logs.unshift({id:uid(), ...entry}); render(); }
+}
+async function deleteLog(id){
+  if(db){ try{ await db.collection('logs').doc(id).delete(); }catch(e){} }
+  else { state.logs = state.logs.filter(l=>l.id!==id); render(); }
+}
+async function addTest(entry){
+  if(db){ try{ await db.collection('tests').add(entry); }catch(e){} }
+  else { state.tests.unshift({id:uid(), ...entry}); render(); }
+}
+async function deleteTest(id){
+  if(db){ try{ await db.collection('tests').doc(id).delete(); }catch(e){} }
+  else { state.tests = state.tests.filter(t=>t.id!==id); render(); }
+}
+async function updateSettings(patch){
+  if(db){ try{ await db.doc('settings/main').update(patch); }catch(e){ try{ await db.doc('settings/main').set({...state.settings, ...patch}); }catch(e2){} } }
+  else { state.settings = {...state.settings, ...patch}; render(); }
+}
+async function addResource(entry){
+  if(db){ try{ await db.collection('resources').add(entry); }catch(e){} }
+  else { state.resources.unshift({id:uid(), ...entry}); render(); }
+}
+async function updateResource(id, patch){
+  if(db){ try{ await db.collection('resources').doc(id).update(patch); }catch(e){} }
+  else { const r=state.resources.find(x=>x.id===id); if(r) Object.assign(r,patch); render(); }
+}
+async function deleteResource(id){
+  if(db){ try{ await db.collection('resources').doc(id).delete(); }catch(e){} }
+  else { state.resources = state.resources.filter(r=>r.id!==id); render(); }
+}
+window.__nimcet = { updateTopic, addLog, deleteLog, addTest, deleteTest, updateSettings, addResource, updateResource, deleteResource };
+
+/* ---------- tabs ---------- */
+const TABS = [
+  {key:'dashboard', label:'Dashboard'},
+  {key:'syllabus', label:'Syllabus'},
+  {key:'log', label:'Study Log'},
+  {key:'tests', label:'Mock Tests'},
+  {key:'resources', label:'Resources'}
+];
+function renderTabs(){
+  const el = document.getElementById('tabs');
+  el.innerHTML = TABS.map(t=>`<button class="tab-btn ${t.key===currentTab?'active':''}" data-tab="${t.key}">${t.label}</button>`).join('');
+  el.querySelectorAll('.tab-btn').forEach(b=>b.addEventListener('click', ()=>{ currentTab=b.dataset.tab; render(); }));
+}
+function showPane(){
+  TABS.forEach(t=>{ document.getElementById('pane-'+t.key).hidden = t.key!==currentTab; });
+}
+
+/* ---------- render dispatch ---------- */
+function render(){
+  if(state.dbAvailable===false && !state.ready){ localSeed(); }
+  renderTabs();
+  showPane();
+  if(currentTab==='dashboard') renderDashboard();
+  if(currentTab==='syllabus') renderSyllabus();
+  if(currentTab==='log') renderLog();
+  if(currentTab==='tests') renderTests();
+  if(currentTab==='resources') renderResources();
+}
+
+/* ---------- dashboard ---------- */
+function renderDashboard(){
+  const pane = document.getElementById('pane-dashboard');
+  const overall = overallProgressPct();
+  const examDate = state.settings.examDate || DEFAULT_EXAM_DATE;
+  const days = Math.ceil((new Date(examDate+'T00:00:00') - new Date(new Date().toDateString()))/86400000);
+  const daysLabel = days>0 ? days : (days===0 ? 0 : 0);
+  const r=46, c=2*Math.PI*r;
+  const dash = c*(overall/100);
+
+  const notice = state.dbAvailable===false
+    ? `<div class="notice">This preview can't reach saved storage right now, so changes here stay local to this session. Open the published artifact link to save progress permanently.</div>`
+    : '';
+
+  const hrs = totalHours();
+  const streak = currentStreak();
+  const avgScore = state.tests.length ? (state.tests.reduce((a,t)=>a+testScorePct(t),0)/state.tests.length) : null;
+  const resDone = state.resources.filter(r=>r.status==='done').length;
+
+  pane.innerHTML = `
+    ${notice}
+    <div class="card hero">
+      <div class="hero-count">
+        <div>
+          <div class="num">${daysLabel}</div>
+          <div class="num-label">days to exam day</div>
+        </div>
+        <div class="date-edit">
+          <span>Target date</span>
+          <input type="date" id="examDateInput" value="${esc(examDate)}">
+          ${state.settings.isEstimate?'<span title="Update once NIMCET releases the official 2027 date">(estimate)</span>':''}
+        </div>
+      </div>
+      <div class="ring-wrap">
+        <svg width="112" height="112" viewBox="0 0 112 112">
+          <circle cx="56" cy="56" r="${r}" fill="none" stroke="var(--border-strong)" stroke-width="10"/>
+          <circle cx="56" cy="56" r="${r}" fill="none" stroke="var(--accent)" stroke-width="10"
+            stroke-linecap="round" stroke-dasharray="${dash.toFixed(1)} ${c.toFixed(1)}"
+            transform="rotate(-90 56 56)"/>
+          <text x="56" y="61" text-anchor="middle" font-family="var(--font-display)" font-size="22" fill="var(--ink)">${overall.toFixed(0)}%</text>
+        </svg>
+        <div>
+          <div class="ring-num">${overall.toFixed(0)}%</div>
+          <div class="ring-label">syllabus mastered<br>(weighted by marks)</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid grid-stats" style="margin-top:14px;">
+      <div class="stat-tile"><div class="label">Study hours logged</div><div class="value">${hrs.toFixed(1)}</div><div class="sub">${state.logs.length} session${state.logs.length===1?'':'s'}</div></div>
+      <div class="stat-tile"><div class="label">Mock tests taken</div><div class="value">${state.tests.length}</div><div class="sub">${state.tests.length? 'last: '+fmtDateShort(state.tests[0].date) : 'none yet'}</div></div>
+      <div class="stat-tile"><div class="label">Average score</div><div class="value">${avgScore==null?'—':avgScore.toFixed(0)+'%'}</div><div class="sub">${avgScore==null?'log a mock test':'of 480 marks'}</div></div>
+      <div class="stat-tile"><div class="label">Current streak</div><div class="value">${streak}</div><div class="sub">day${streak===1?'':'s'} in a row</div></div>
+      <div class="stat-tile"><div class="label">Resources done</div><div class="value">${resDone}/${state.resources.length}</div><div class="sub">videos, PDFs & books</div></div>
+    </div>
+
+    <div class="card" style="margin-top:16px;">
+      <div class="section-title">Subject progress <span class="hint">weighted by NIMCET's own question split</span></div>
+      ${SUBJECTS.map(s=>{
+        const pct = subjectProgressPct(s.key);
+        const list = topicsBySubject(s.key).map(e=>e[1]);
+        const mastered = list.filter(t=>t.status==='mastered').length;
+        return `<div class="subj-row">
+          <span class="subj-dot" style="background:${s.color}"></span>
+          <span class="subj-name">${esc(s.name)}</span>
+          <span class="subj-track"><span class="subj-fill" style="width:${pct.toFixed(0)}%; background:${s.color}"></span></span>
+          <span class="subj-pct">${mastered}/${list.length} · ${pct.toFixed(0)}%</span>
+        </div>`;
+      }).join('')}
+    </div>
+
+    <div class="grid grid-2" style="margin-top:16px; align-items:start;">
+      <div class="card">
+        <div class="section-title">Score trend</div>
+        ${renderScoreChart()}
+      </div>
+      <div class="card">
+        <div class="section-title">Weak areas flagged</div>
+        ${weakTopics().length ? `<div class="chip-list">${weakTopics().map(([id,t])=>`<span class="chip"><span class="dot" style="background:${SUBJECT_MAP[t.subject].color}"></span>${esc(t.name)}</span>`).join('')}</div>` : `<div class="empty">Nothing flagged — mark topics "weak" from the Syllabus tab as you find them.</div>`}
+        <div class="section-title" style="margin-top:18px;">Recent activity</div>
+        ${state.logs.length ? state.logs.slice(0,6).map(l=>`<div class="activity-row">
+            <span class="d">${fmtDateShort(l.date)}</span>
+            <span>${esc(SUBJECT_MAP[l.subject]?SUBJECT_MAP[l.subject].name:l.subject)}${l.topicName?' · '+esc(l.topicName):''}</span>
+            <span class="m">${l.minutes}m</span>
+          </div>`).join('') : `<div class="empty">No study sessions logged yet.</div>`}
+      </div>
+    </div>
+  `;
+
+  const dateInput = document.getElementById('examDateInput');
+  dateInput.addEventListener('change', ()=>{ updateSettings({examDate:dateInput.value, isEstimate:false}); });
+
+  wireScoreChartHover();
+}
+
+function renderScoreChart(){
+  if(state.tests.length<1){
+    return `<div class="empty">No mock tests yet — add one from the Mock Tests tab and your score trend will appear here.</div>`;
+  }
+  const pts = [...state.tests].sort((a,b)=>a.date.localeCompare(b.date));
+  const W=420,H=160,padL=32,padR=12,padT=14,padB=24;
+  const maxV = 480, minV=0;
+  const n = pts.length;
+  const x = i => n===1 ? padL + (W-padL-padR)/2 : padL + (W-padL-padR)*(i/(n-1));
+  const y = v => padT + (H-padT-padB)*(1-((v-minV)/(maxV-minV)));
+  const coords = pts.map((t,i)=>[x(i), y(Math.max(0,Number(t.total)||0))]);
+  const line = coords.map((p,i)=>(i===0?'M':'L')+p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ');
+  const area = line + ` L${coords[coords.length-1][0].toFixed(1)},${y(0).toFixed(1)} L${coords[0][0].toFixed(1)},${y(0).toFixed(1)} Z`;
+  const gridLines = [0,120,240,360,480].map(v=>`<line x1="${padL}" y1="${y(v).toFixed(1)}" x2="${W-padR}" y2="${y(v).toFixed(1)}" stroke="var(--grid)" stroke-width="1"/><text x="${padL-6}" y="${(y(v)+3).toFixed(1)}" text-anchor="end" font-size="10" font-family="var(--font-mono)" fill="var(--muted)">${v}</text>`).join('');
+  const dots = coords.map((p,i)=>`<circle class="pt" data-i="${i}" cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="${i===coords.length-1?5.5:4}" fill="var(--accent)" stroke="var(--surface)" stroke-width="1.5"/>`).join('');
+  return `<div class="chart-wrap">
+    <svg id="scoreChart" width="100%" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" style="overflow:visible;" data-w="${W}" data-h="${H}">
+      ${gridLines}
+      <path d="${area}" fill="var(--accent)" opacity="0.12" stroke="none"/>
+      <path d="${line}" fill="none" stroke="var(--accent)" stroke-width="2"/>
+      ${dots}
+    </svg>
+    <div class="chart-tip" id="chartTip"></div>
+  </div>`;
+}
+function wireScoreChartHover(){
+  const svg = document.getElementById('scoreChart');
+  if(!svg) return;
+  const tip = document.getElementById('chartTip');
+  const pts = [...state.tests].sort((a,b)=>a.date.localeCompare(b.date));
+  const vbW = Number(svg.dataset.w)||420, vbH = Number(svg.dataset.h)||160;
+  function showTip(dot){
+    const t = pts[Number(dot.dataset.i)];
+    const rect = svg.getBoundingClientRect();
+    const wrapRect = svg.parentElement.getBoundingClientRect();
+    const cx = Number(dot.getAttribute('cx'))/vbW*rect.width;
+    const cy = Number(dot.getAttribute('cy'))/vbH*rect.height;
+    tip.textContent = `${fmtDateShort(t.date)} · ${t.total} / 480 (${testScorePct(t).toFixed(0)}%)`;
+    tip.style.left = (rect.left - wrapRect.left + cx) + 'px';
+    tip.style.top = (rect.top - wrapRect.top + cy) + 'px';
+    tip.classList.add('show');
+  }
+  svg.querySelectorAll('.pt').forEach(dot=>{
+    dot.addEventListener('mouseenter', ()=>showTip(dot));
+    dot.addEventListener('mouseleave', ()=> tip.classList.remove('show'));
+    dot.addEventListener('click', (e)=>{ e.stopPropagation(); showTip(dot); });
+  });
+}
+
+/* ---------- syllabus ---------- */
+function renderSyllabus(){
+  const pane = document.getElementById('pane-syllabus');
+  const filters = [{key:'all',name:'All subjects'}, ...SUBJECTS];
+  pane.innerHTML = `
+    <div class="filter-row" id="syllFilters">
+      ${filters.map(f=>`<button class="filter-btn ${syllabusFilter===f.key?'active':''}" data-f="${f.key}">${esc(f.name)}</button>`).join('')}
+    </div>
+    <div id="syllList"></div>
+  `;
+  pane.querySelectorAll('#syllFilters .filter-btn').forEach(b=>b.addEventListener('click', ()=>{ syllabusFilter=b.dataset.f; renderSyllabus(); }));
+  const listEl = document.getElementById('syllList');
+  const subs = syllabusFilter==='all' ? SUBJECTS : SUBJECTS.filter(s=>s.key===syllabusFilter);
+  listEl.innerHTML = subs.map(s=>{
+    const topics = topicsBySubject(s.key);
+    return `<div class="subj-block">
+      <div class="subj-heading">
+        <span class="bar" style="background:${s.color}"></span>
+        <h3>${esc(s.name)}</h3>
+        <span class="q">${s.questions} questions</span>
+      </div>
+      ${topics.map(([id,t])=>topicCardHtml(id,t,s)).join('')}
+    </div>`;
+  }).join('');
+
+  listEl.querySelectorAll('[data-status]').forEach(sel=>sel.addEventListener('change', ()=>updateTopic(sel.dataset.status, {status:sel.value})));
+  listEl.querySelectorAll('[data-star]').forEach(btn=>btn.addEventListener('click', ()=>{
+    const [id,val] = btn.dataset.star.split('|');
+    const current = state.topics[id].confidence||0;
+    updateTopic(id, {confidence: current===Number(val) ? 0 : Number(val)});
+  }));
+  listEl.querySelectorAll('[data-weak]').forEach(btn=>btn.addEventListener('click', ()=>{
+    const id = btn.dataset.weak;
+    updateTopic(id, {weak: !(state.topics[id].weak)});
+  }));
+  listEl.querySelectorAll('[data-revised]').forEach(inp=>inp.addEventListener('change', ()=>updateTopic(inp.dataset.revised, {lastRevised:inp.value})));
+  listEl.querySelectorAll('[data-notes]').forEach(ta=>ta.addEventListener('blur', ()=>updateTopic(ta.dataset.notes, {notes:ta.value})));
+}
+function topicCardHtml(id,t,s){
+  const pct = (STATUS_STEPS[t.status]??0)*100;
+  const stars = [1,2,3,4,5].map(n=>`<button class="star-btn ${n<=(t.confidence||0)?'on':''}" data-star="${id}|${n}" title="Confidence ${n}/5">★</button>`).join('');
+  return `<div class="topic-card" style="border-left-color:${s.color}">
+    <div class="topic-top">
+      <div>
+        <div class="topic-name">${esc(t.name)}</div>
+        <div class="topic-weight">~${t.weight} of ${s.questions} questions in this subject</div>
+      </div>
+      <div class="mini-track" title="${STATUS_LABEL[t.status]||'Not started'}"><span class="mini-fill" style="width:${pct}%; background:${s.color}"></span></div>
+    </div>
+    <div class="topic-controls">
+      <select class="status-select" data-status="${id}">
+        ${Object.keys(STATUS_LABEL).map(k=>`<option value="${k}" ${t.status===k?'selected':''}>${STATUS_LABEL[k]}</option>`).join('')}
+      </select>
+      <span class="stars">${stars}</span>
+      <button class="weak-toggle ${t.weak?'on':''}" data-weak="${id}">${t.weak?'⚑ Weak area':'Mark weak'}</button>
+      <span class="revised-row">Last revised <input type="date" data-revised="${id}" value="${esc(t.lastRevised||'')}"></span>
+    </div>
+    <textarea class="topic-notes" data-notes="${id}" placeholder="Notes — tricky sub-topics, formulas to remember, question patterns...">${esc(t.notes||'')}</textarea>
+  </div>`;
+}
+
+/* ---------- study log ---------- */
+function renderLog(){
+  const pane = document.getElementById('pane-log');
+  const today = todayStr();
+  pane.innerHTML = `
+    <div class="form-card">
+      <div class="section-title">Log a study session</div>
+      <form id="logForm">
+        <div class="form-grid">
+          <div class="field"><label>Date</label><input type="date" id="logDate" value="${today}" required></div>
+          <div class="field"><label>Subject</label><select id="logSubject">${SUBJECTS.map(s=>`<option value="${s.key}">${esc(s.name)}</option>`).join('')}</select></div>
+          <div class="field"><label>Topic</label><select id="logTopic"></select></div>
+          <div class="field"><label>Minutes</label><input type="number" id="logMinutes" min="1" max="900" step="1" placeholder="60" required></div>
+          <div class="field wide"><label>Notes (optional)</label><input type="text" id="logNotes" placeholder="What did you cover?"></div>
+        </div>
+        <div class="submit-row"><button class="btn" type="submit">Add entry</button></div>
+      </form>
+    </div>
+
+    <div class="card" style="margin-bottom:16px;">
+      <div class="section-title">Hours by subject <span class="hint">all time</span></div>
+      ${SUBJECTS.map(s=>{
+        const h = hoursBySubject(s.key);
+        const max = Math.max(1, ...SUBJECTS.map(x=>hoursBySubject(x.key)));
+        return `<div class="subj-row">
+          <span class="subj-dot" style="background:${s.color}"></span>
+          <span class="subj-name">${esc(s.name)}</span>
+          <span class="subj-track"><span class="subj-fill" style="width:${(h/max*100).toFixed(0)}%; background:${s.color}"></span></span>
+          <span class="subj-pct">${h.toFixed(1)}h</span>
+        </div>`;
+      }).join('')}
+    </div>
+
+    <div class="card">
+      <div class="section-title">Session history <span class="hint">${state.logs.length} entries</span></div>
+      <div id="logList">${state.logs.length? state.logs.map(logRowHtml).join('') : '<div class="empty">No sessions logged yet — add your first one above.</div>'}</div>
+    </div>
+  `;
+
+  const subjSel = document.getElementById('logSubject');
+  const topicSel = document.getElementById('logTopic');
+  function fillTopics(){
+    const key = subjSel.value;
+    const topics = topicsBySubject(key);
+    topicSel.innerHTML = `<option value="">(general / mixed)</option>` + topics.map(([id,t])=>`<option value="${id}">${esc(t.name)}</option>`).join('');
+  }
+  subjSel.addEventListener('change', fillTopics);
+  fillTopics();
+
+  document.getElementById('logForm').addEventListener('submit', e=>{
+    e.preventDefault();
+    const date = document.getElementById('logDate').value || today;
+    const subject = subjSel.value;
+    const topicId = topicSel.value;
+    const topicName = topicId ? state.topics[topicId].name : '';
+    const minutes = Number(document.getElementById('logMinutes').value)||0;
+    const notes = document.getElementById('logNotes').value.trim();
+    if(minutes<=0) return;
+    addLog({date, subject, topicId, topicName, minutes, notes});
+    e.target.reset();
+    document.getElementById('logDate').value = today;
+    fillTopics();
+  });
+
+  document.getElementById('logList').querySelectorAll('[data-del]').forEach(btn=>btn.addEventListener('click', function handler(){
+    if(btn.dataset.confirm==='1'){ deleteLog(btn.dataset.del); return; }
+    btn.dataset.confirm='1'; btn.textContent='Confirm?'; btn.classList.add('confirm');
+    setTimeout(()=>{ btn.dataset.confirm='0'; btn.textContent='✕'; btn.classList.remove('confirm'); }, 3000);
+  }));
+}
+function logRowHtml(l){
+  const subj = SUBJECT_MAP[l.subject];
+  return `<div class="list-row">
+    <span class="d">${fmtDateShort(l.date)}</span>
+    <span>${subj?esc(subj.name):esc(l.subject)}${l.topicName?' · '+esc(l.topicName):''}${l.notes?`<div class="meta">${esc(l.notes)}</div>`:''}</span>
+    <span class="mins">${l.minutes}m</span>
+    <button class="del-btn" data-del="${l.id}" title="Delete">✕</button>
+  </div>`;
+}
+
+/* ---------- mock tests ---------- */
+function renderTests(){
+  const pane = document.getElementById('pane-tests');
+  const today = todayStr();
+  pane.innerHTML = `
+    <div class="form-card">
+      <div class="section-title">Add a mock test result</div>
+      <form id="testForm">
+        <div class="form-grid">
+          <div class="field"><label>Date</label><input type="date" id="tDate" value="${today}" required></div>
+          <div class="field wide"><label>Test name / source</label><input type="text" id="tName" placeholder="e.g. FIITJEE Mock 3" required></div>
+          <div class="field"><label>Maths marks</label><input type="number" id="tMath" step="1" placeholder="0"></div>
+          <div class="field"><label>Reasoning marks</label><input type="number" id="tReasoning" step="1" placeholder="0"></div>
+          <div class="field"><label>Computer marks</label><input type="number" id="tComputer" step="1" placeholder="0"></div>
+          <div class="field"><label>English marks</label><input type="number" id="tEnglish" step="1" placeholder="0"></div>
+          <div class="field"><label>Total (of 480)</label><input type="number" id="tTotal" step="1" placeholder="auto-sums above"></div>
+          <div class="field"><label>Time taken (min)</label><input type="number" id="tTime" step="1" placeholder="120"></div>
+          <div class="field wide"><label>Notes (optional)</label><input type="text" id="tNotes" placeholder="Weak sections, silly mistakes, timing issues..."></div>
+        </div>
+        <div class="submit-row"><button class="btn" type="submit">Add result</button></div>
+      </form>
+    </div>
+
+    <div class="card">
+      <div class="section-title">Test history <span class="hint">${state.tests.length} taken</span></div>
+      <div id="testList">${state.tests.length? [...state.tests].sort((a,b)=>b.date.localeCompare(a.date)).map((t,i,arr)=>testRowHtml(t,arr[i+1])).join('') : '<div class="empty">No mock tests logged yet — add your first result above.</div>'}</div>
+    </div>
+  `;
+
+  ['tMath','tReasoning','tComputer','tEnglish'].forEach(fid=>{
+    document.getElementById(fid).addEventListener('input', ()=>{
+      const m = Number(document.getElementById('tMath').value)||0;
+      const r = Number(document.getElementById('tReasoning').value)||0;
+      const c = Number(document.getElementById('tComputer').value)||0;
+      const en = Number(document.getElementById('tEnglish').value)||0;
+      document.getElementById('tTotal').value = (m+r+c+en) || '';
+    });
+  });
+
+  document.getElementById('testForm').addEventListener('submit', e=>{
+    e.preventDefault();
+    const date = document.getElementById('tDate').value || today;
+    const name = document.getElementById('tName').value.trim() || 'Mock test';
+    const math = Number(document.getElementById('tMath').value)||0;
+    const reasoning = Number(document.getElementById('tReasoning').value)||0;
+    const computer = Number(document.getElementById('tComputer').value)||0;
+    const english = Number(document.getElementById('tEnglish').value)||0;
+    const totalInput = document.getElementById('tTotal').value;
+    const total = totalInput!=='' ? Number(totalInput) : (math+reasoning+computer+english);
+    const timeTaken = Number(document.getElementById('tTime').value)||0;
+    const notes = document.getElementById('tNotes').value.trim();
+    addTest({date, name, math, reasoning, computer, english, total, timeTaken, notes});
+    e.target.reset();
+    document.getElementById('tDate').value = today;
+  });
+
+  document.getElementById('testList').querySelectorAll('[data-del]').forEach(btn=>btn.addEventListener('click', function(){
+    if(btn.dataset.confirm==='1'){ deleteTest(btn.dataset.del); return; }
+    btn.dataset.confirm='1'; btn.textContent='Confirm?'; btn.classList.add('confirm');
+    setTimeout(()=>{ btn.dataset.confirm='0'; btn.textContent='✕'; btn.classList.remove('confirm'); }, 3000);
+  }));
+}
+function testRowHtml(t, prev){
+  const pct = testScorePct(t);
+  let deltaHtml = '';
+  if(prev){
+    const d = (Number(t.total)||0) - (Number(prev.total)||0);
+    const good = d>=0;
+    deltaHtml = `<span class="delta" style="color:${good?'var(--good-text)':'var(--critical)'}">${good?'▲':'▼'} ${good?'+':''}${d}</span>`;
+  } else {
+    deltaHtml = `<span class="delta" style="color:var(--muted)">first</span>`;
+  }
+  return `<div class="test-row">
+    <span class="d">${fmtDateShort(t.date)}</span>
+    <span>${esc(t.name)}${t.notes?`<div class="meta">${esc(t.notes)}</div>`:''}</span>
+    <span class="score">${t.total}<span style="color:var(--muted); font-weight:400;">/480</span></span>
+    ${deltaHtml}
+    <button class="del-btn" data-del="${t.id}" title="Delete">✕</button>
+  </div>`;
+}
+
+/* ---------- resources ---------- */
+function renderResources(){
+  const pane = document.getElementById('pane-resources');
+  const filters = [{key:'all',name:'All'}, ...RESOURCE_SUBJECTS];
+  pane.innerHTML = `
+    <div class="form-card">
+      <div class="section-title">Add a study resource</div>
+      <form id="resForm">
+        <div class="form-grid">
+          <div class="field wide"><label>Title</label><input type="text" id="rTitle" placeholder="e.g. Integral Calculus crash course" required></div>
+          <div class="field wide"><label>Link (YouTube video, PDF, book page, website...)</label><input type="url" id="rUrl" placeholder="https://..." required></div>
+          <div class="field"><label>Type</label><select id="rKind">${Object.keys(KIND_LABEL).map(k=>`<option value="${k}">${KIND_LABEL[k]}</option>`).join('')}</select></div>
+          <div class="field"><label>Subject</label><select id="rSubject">${RESOURCE_SUBJECTS.map(s=>`<option value="${s.key}">${esc(s.name)}</option>`).join('')}</select></div>
+          <div class="field wide"><label>Notes (optional)</label><input type="text" id="rNotes" placeholder="Why this one / what it covers"></div>
+        </div>
+        <div class="submit-row"><button class="btn" type="submit">Add resource</button></div>
+      </form>
+    </div>
+
+    <div class="filter-row" id="resFilters">
+      ${filters.map(f=>`<button class="filter-btn ${resourceFilter===f.key?'active':''}" data-f="${f.key}">${esc(f.name)}</button>`).join('')}
+    </div>
+
+    <div class="card">
+      <div class="section-title">Your resource list <span class="hint">${state.resources.length} saved</span></div>
+      <div id="resList"></div>
+    </div>
+  `;
+
+  pane.querySelectorAll('#resFilters .filter-btn').forEach(b=>b.addEventListener('click', ()=>{ resourceFilter=b.dataset.f; renderResources(); }));
+
+  document.getElementById('resForm').addEventListener('submit', e=>{
+    e.preventDefault();
+    const title = document.getElementById('rTitle').value.trim();
+    let url = document.getElementById('rUrl').value.trim();
+    if(url && !/^https?:\/\//i.test(url)) url = 'https://' + url;
+    const kind = document.getElementById('rKind').value;
+    const subject = document.getElementById('rSubject').value;
+    const notes = document.getElementById('rNotes').value.trim();
+    if(!title || !url) return;
+    addResource({title, url, kind, subject, notes, status:'to-do'});
+    e.target.reset();
+  });
+
+  renderResourceList();
+}
+function renderResourceList(){
+  const listEl = document.getElementById('resList');
+  if(!listEl) return;
+  const items = resourceFilter==='all' ? state.resources : state.resources.filter(r=>r.subject===resourceFilter);
+  listEl.innerHTML = items.length ? items.map(resRowHtml).join('') : '<div class="empty">No resources saved yet — add a link above, or switch the filter.</div>';
+  listEl.querySelectorAll('[data-rstatus]').forEach(sel=>sel.addEventListener('change', ()=>updateResource(sel.dataset.rstatus, {status:sel.value})));
+  listEl.querySelectorAll('[data-rdel]').forEach(btn=>btn.addEventListener('click', function(){
+    if(btn.dataset.confirm==='1'){ deleteResource(btn.dataset.rdel); return; }
+    btn.dataset.confirm='1'; btn.textContent='Confirm?'; btn.classList.add('confirm');
+    setTimeout(()=>{ btn.dataset.confirm='0'; btn.textContent='✕'; btn.classList.remove('confirm'); }, 3000);
+  }));
+}
+function resRowHtml(r){
+  const subj = RESOURCE_SUBJECT_MAP[r.subject] || RESOURCE_SUBJECT_MAP.general;
+  return `<div class="res-row">
+    <span class="res-kind">${KIND_LABEL[r.kind]||'Link'}</span>
+    <div class="res-body">
+      <div class="res-title"><a href="${esc(r.url)}" target="_blank" rel="noopener noreferrer">${esc(r.title)}</a></div>
+      <div class="res-meta">${esc(subj.name)}${r.notes?' · '+esc(r.notes):''}</div>
+    </div>
+    <div class="res-controls">
+      <select class="res-status" data-rstatus="${r.id}">
+        ${Object.keys(RES_STATUS_LABEL).map(k=>`<option value="${k}" ${r.status===k?'selected':''}>${RES_STATUS_LABEL[k]}</option>`).join('')}
+      </select>
+      <button class="del-btn" data-rdel="${r.id}" title="Remove">✕</button>
+    </div>
+  </div>`;
+}
+
+/* ---------- boot ---------- */
+document.addEventListener('click', ()=>{ const t=document.getElementById('chartTip'); if(t) t.classList.remove('show'); });
+renderTabs();
+showPane();
+render();
+initDb();
+
+})();
+</script>
