@@ -1,9 +1,10 @@
 # NIMCET Study Tracker
 
-A single-file progress tracker for NIMCET 2027 preparation.
+A single-file progress tracker for NIMCET 2027 preparation. No build step, no dependencies — one HTML file.
 
-Open [`nimcet-tracker.html`](./nimcet-tracker.html) directly in a browser, or use the hosted version:
-https://claude.ai/artifact/7nXbyjon1eMu3LrzFXAMr3
+**Live:** https://akashsingh512.github.io/study_tracker/
+
+Works on phone and desktop. Progress is saved automatically in your browser (localStorage), so it survives refreshes and stays on your device.
 
 ## What it tracks
 
@@ -13,4 +14,6 @@ https://claude.ai/artifact/7nXbyjon1eMu3LrzFXAMr3
 - **Resources** — curated free study links (videos, PDFs, official sources) with a watch/read status, plus a form to add your own.
 - **Dashboard** — countdown to exam day, weighted overall progress, subject breakdowns, and recent activity.
 
-When opened as the hosted Claude artifact, all data saves automatically and persists across devices. Opened as a plain local file, it still works but only keeps data for that browser session.
+## Storage
+
+Progress is stored in your browser's localStorage under `nimcet-tracker-v1` — it persists across refreshes but stays on that one device/browser. Clearing site data clears your progress.

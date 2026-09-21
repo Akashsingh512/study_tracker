@@ -34,7 +34,8 @@
   --good:#0ca30c; --good-text:#3fce3f; --warning:#fab219; --critical:#e66767;
 }
 *{box-sizing:border-box;}
-body{background:var(--page); color:var(--ink); font-family:var(--font-body); padding-inline:16px;}
+body{background:var(--page); color:var(--ink); font-family:var(--font-body); padding-inline:16px; overflow-wrap:break-word;}
+input,select,textarea,button{max-width:100%; min-width:0;}
 h1,h2,h3{font-family:var(--font-display); font-weight:600; margin:0; text-wrap:balance;}
 a{color:inherit;}
 button{font-family:inherit;}
@@ -71,16 +72,17 @@ section.pane[hidden]{display:none;}
 .stat-tile .sub{font-size:.76rem; color:var(--ink-soft); margin-top:2px;}
 
 .hero{display:flex; gap:20px; align-items:center; flex-wrap:wrap;}
-.hero-count{display:flex; align-items:center; gap:16px;}
+.hero-count{display:flex; align-items:center; gap:16px; flex-wrap:wrap; min-width:0;}
 .hero-count .num{font-family:var(--font-display); font-size:3.2rem; line-height:1; font-variant-numeric:tabular-nums;}
 .hero-count .num-label{font-size:.78rem; color:var(--muted); text-transform:uppercase; letter-spacing:.6px;}
-.ring-wrap{display:flex; align-items:center; gap:14px; margin-left:auto;}
+.ring-wrap{display:flex; align-items:center; gap:14px; margin-left:auto; min-width:0;}
+.ring-wrap svg{flex:none;}
 .ring-num{font-family:var(--font-display); font-size:1.7rem;}
 .ring-label{font-size:.76rem; color:var(--muted);}
-.date-edit{display:flex; align-items:center; gap:8px; font-size:.78rem; color:var(--muted); margin-top:10px;}
-.date-edit input{font-family:var(--font-mono); font-size:.8rem; background:var(--surface-2); border:1px solid var(--border); border-radius:6px; padding:4px 6px; color:var(--ink);}
+.date-edit{display:flex; align-items:center; gap:8px; flex-wrap:wrap; font-size:.78rem; color:var(--muted); margin-top:10px;}
+.date-edit input{font-family:var(--font-mono); font-size:.8rem; background:var(--surface-2); border:1px solid var(--border); border-radius:6px; padding:5px 6px; color:var(--ink); max-width:100%;}
 
-.section-title{font-size:1.02rem; margin-bottom:12px; display:flex; align-items:center; justify-content:space-between; gap:10px;}
+.section-title{font-size:1.02rem; margin-bottom:12px; display:flex; align-items:baseline; justify-content:space-between; gap:4px 10px; flex-wrap:wrap;}
 .section-title .hint{font-size:.74rem; font-weight:400; color:var(--muted); font-family:var(--font-body);}
 
 /* subject bars */
@@ -88,7 +90,7 @@ section.pane[hidden]{display:none;}
 .subj-row:last-child{border-bottom:none;}
 .subj-dot{width:10px; height:10px; border-radius:3px; flex:none;}
 .subj-name{font-size:.86rem; font-weight:600; width:190px; flex:none;}
-.subj-track{flex:1; height:8px; border-radius:5px; background:var(--surface-2); border:1px solid var(--border); overflow:hidden;}
+.subj-track{flex:1; min-width:24px; height:8px; border-radius:5px; background:var(--surface-2); border:1px solid var(--border); overflow:hidden;}
 .subj-fill{height:100%; border-radius:5px;}
 .subj-pct{font-family:var(--font-mono); font-size:.78rem; width:74px; text-align:right; flex:none; color:var(--ink-soft);}
 @media (max-width:600px){.subj-name{width:120px; font-size:.78rem;}}
@@ -189,6 +191,38 @@ section.pane[hidden]{display:none;}
 @media (prefers-reduced-motion:no-preference){
   .pane{animation:fade .25s ease;}
   @keyframes fade{from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:translateY(0);}}
+}
+
+/* ---- phone ---- */
+@media (max-width:640px){
+  .wrap{padding-block:16px 56px;}
+  .card{padding:15px;}
+  .form-card{padding:15px;}
+  section.pane{padding-top:16px;}
+
+  /* hero stacks: countdown, then target date, then the ring on its own row */
+  .hero{gap:14px;}
+  .hero-count{width:100%; gap:14px;}
+  .hero-count .num{font-size:2.9rem;}
+  .date-edit{margin-top:0;}
+  .ring-wrap{margin-left:0; width:100%; gap:16px; padding-top:14px; border-top:1px solid var(--grid);}
+  .ring-label{line-height:1.35;}
+
+  .brand-text h1{font-size:1.15rem;}
+  .tab-btn{padding:10px 9px; font-size:.82rem;}
+
+  .topic-top{gap:8px;}
+  .topic-top .mini-track{width:100%;}
+  .topic-controls{gap:8px 10px;}
+  .revised-row{width:100%;}
+  .res-controls{width:100%; justify-content:space-between;}
+}
+@media (max-width:380px){
+  .hero-count .num{font-size:2.5rem;}
+  .stat-tile{padding:12px 13px;}
+  .stat-tile .value{font-size:1.45rem;}
+  .subj-name{width:96px;}
+  .subj-pct{width:66px; font-size:.74rem;}
 }
 </style>
 
@@ -392,51 +426,87 @@ function subscribeAll(){
   }, ()=>{});
 }
 
-/* local fallback seed (only used if db capability unavailable in this view) */
+/* ---------- standalone fallback storage ----------
+   Inside the Claude artifact the `db` capability holds everything. Served as a
+   plain static file (GitHub Pages, opened from disk) there is no db, so persist
+   to this browser instead — otherwise a refresh would wipe months of tracking. */
+const LS_KEY = 'nimcet-tracker-v1';
+let lsWorks = false;
+function saveLocal(){
+  if(db) return;
+  try{
+    localStorage.setItem(LS_KEY, JSON.stringify({
+      topics:state.topics, logs:state.logs, tests:state.tests,
+      resources:state.resources, settings:state.settings
+    }));
+    lsWorks = true;
+  }catch(e){ lsWorks = false; }
+}
+function loadLocal(){
+  try{
+    const raw = localStorage.getItem(LS_KEY);
+    lsWorks = true;
+    if(!raw) return false;
+    const p = JSON.parse(raw);
+    if(!p || typeof p!=='object') return false;
+    if(p.topics && Object.keys(p.topics).length) state.topics = p.topics;
+    if(Array.isArray(p.logs)) state.logs = p.logs;
+    if(Array.isArray(p.tests)) state.tests = p.tests;
+    if(Array.isArray(p.resources)) state.resources = p.resources;
+    if(p.settings) state.settings = {...state.settings, ...p.settings};
+    return true;
+  }catch(e){ lsWorks = false; return false; }
+}
 function localSeed(){
-  const map={};
-  DEFAULT_TOPICS.forEach(t=>{ map[t.id]={subject:t.subject, name:t.name, weight:t.weight, order:t.order, status:'not-started', confidence:0, weak:false, lastRevised:'', notes:''}; });
-  state.topics = map;
-  state.resources = DEFAULT_RESOURCES.map(r=>({id:uid(), ...r, status:'to-do'}));
+  loadLocal();
+  if(!Object.keys(state.topics).length){
+    const map={};
+    DEFAULT_TOPICS.forEach(t=>{ map[t.id]={subject:t.subject, name:t.name, weight:t.weight, order:t.order, status:'not-started', confidence:0, weak:false, lastRevised:'', notes:''}; });
+    state.topics = map;
+  }
+  if(!state.resources.length){
+    state.resources = DEFAULT_RESOURCES.map(r=>({id:uid(), ...r, status:'to-do'}));
+  }
   state.ready = true;
+  saveLocal();
 }
 
 /* ---------- writes ---------- */
 async function updateTopic(id, patch){
   if(db){ try{ await db.collection('topics').doc(id).update(patch); }catch(e){} }
-  else { state.topics[id] = {...state.topics[id], ...patch}; render(); }
+  else { state.topics[id] = {...state.topics[id], ...patch}; saveLocal(); render(); }
 }
 async function addLog(entry){
   if(db){ try{ await db.collection('logs').add(entry); }catch(e){} }
-  else { state.logs.unshift({id:uid(), ...entry}); render(); }
+  else { state.logs.unshift({id:uid(), ...entry}); state.logs.sort((a,b)=>b.date.localeCompare(a.date)); saveLocal(); render(); }
 }
 async function deleteLog(id){
   if(db){ try{ await db.collection('logs').doc(id).delete(); }catch(e){} }
-  else { state.logs = state.logs.filter(l=>l.id!==id); render(); }
+  else { state.logs = state.logs.filter(l=>l.id!==id); saveLocal(); render(); }
 }
 async function addTest(entry){
   if(db){ try{ await db.collection('tests').add(entry); }catch(e){} }
-  else { state.tests.unshift({id:uid(), ...entry}); render(); }
+  else { state.tests.unshift({id:uid(), ...entry}); state.tests.sort((a,b)=>b.date.localeCompare(a.date)); saveLocal(); render(); }
 }
 async function deleteTest(id){
   if(db){ try{ await db.collection('tests').doc(id).delete(); }catch(e){} }
-  else { state.tests = state.tests.filter(t=>t.id!==id); render(); }
+  else { state.tests = state.tests.filter(t=>t.id!==id); saveLocal(); render(); }
 }
 async function updateSettings(patch){
   if(db){ try{ await db.doc('settings/main').update(patch); }catch(e){ try{ await db.doc('settings/main').set({...state.settings, ...patch}); }catch(e2){} } }
-  else { state.settings = {...state.settings, ...patch}; render(); }
+  else { state.settings = {...state.settings, ...patch}; saveLocal(); render(); }
 }
 async function addResource(entry){
   if(db){ try{ await db.collection('resources').add(entry); }catch(e){} }
-  else { state.resources.unshift({id:uid(), ...entry}); render(); }
+  else { state.resources.unshift({id:uid(), ...entry}); saveLocal(); render(); }
 }
 async function updateResource(id, patch){
   if(db){ try{ await db.collection('resources').doc(id).update(patch); }catch(e){} }
-  else { const r=state.resources.find(x=>x.id===id); if(r) Object.assign(r,patch); render(); }
+  else { const r=state.resources.find(x=>x.id===id); if(r) Object.assign(r,patch); saveLocal(); render(); }
 }
 async function deleteResource(id){
   if(db){ try{ await db.collection('resources').doc(id).delete(); }catch(e){} }
-  else { state.resources = state.resources.filter(r=>r.id!==id); render(); }
+  else { state.resources = state.resources.filter(r=>r.id!==id); saveLocal(); render(); }
 }
 window.__nimcet = { updateTopic, addLog, deleteLog, addTest, deleteTest, updateSettings, addResource, updateResource, deleteResource };
 
@@ -480,7 +550,9 @@ function renderDashboard(){
   const dash = c*(overall/100);
 
   const notice = state.dbAvailable===false
-    ? `<div class="notice">This preview can't reach saved storage right now, so changes here stay local to this session. Open the published artifact link to save progress permanently.</div>`
+    ? (lsWorks
+        ? `<div class="notice">Standalone mode — your progress is saved in this browser on this device. To sync across devices, use the hosted Claude version.</div>`
+        : `<div class="notice">This browser is blocking local storage (private window?), so changes will be lost on refresh. Enable site data, or use the hosted Claude version.</div>`)
     : '';
 
   const hrs = totalHours();
@@ -569,7 +641,7 @@ function renderScoreChart(){
     return `<div class="empty">No mock tests yet — add one from the Mock Tests tab and your score trend will appear here.</div>`;
   }
   const pts = [...state.tests].sort((a,b)=>a.date.localeCompare(b.date));
-  const W=420,H=160,padL=32,padR=12,padT=14,padB=24;
+  const W=360,H=150,padL=30,padR=10,padT=12,padB=22;
   const maxV = 480, minV=0;
   const n = pts.length;
   const x = i => n===1 ? padL + (W-padL-padR)/2 : padL + (W-padL-padR)*(i/(n-1));
@@ -577,7 +649,7 @@ function renderScoreChart(){
   const coords = pts.map((t,i)=>[x(i), y(Math.max(0,Number(t.total)||0))]);
   const line = coords.map((p,i)=>(i===0?'M':'L')+p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ');
   const area = line + ` L${coords[coords.length-1][0].toFixed(1)},${y(0).toFixed(1)} L${coords[0][0].toFixed(1)},${y(0).toFixed(1)} Z`;
-  const gridLines = [0,120,240,360,480].map(v=>`<line x1="${padL}" y1="${y(v).toFixed(1)}" x2="${W-padR}" y2="${y(v).toFixed(1)}" stroke="var(--grid)" stroke-width="1"/><text x="${padL-6}" y="${(y(v)+3).toFixed(1)}" text-anchor="end" font-size="10" font-family="var(--font-mono)" fill="var(--muted)">${v}</text>`).join('');
+  const gridLines = [0,120,240,360,480].map(v=>`<line x1="${padL}" y1="${y(v).toFixed(1)}" x2="${W-padR}" y2="${y(v).toFixed(1)}" stroke="var(--grid)" stroke-width="1"/><text x="${padL-6}" y="${(y(v)+3).toFixed(1)}" text-anchor="end" font-size="11" font-family="var(--font-mono)" fill="var(--muted)">${v}</text>`).join('');
   const dots = coords.map((p,i)=>`<circle class="pt" data-i="${i}" cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="${i===coords.length-1?5.5:4}" fill="var(--accent)" stroke="var(--surface)" stroke-width="1.5"/>`).join('');
   return `<div class="chart-wrap">
     <svg id="scoreChart" width="100%" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" style="overflow:visible;" data-w="${W}" data-h="${H}">
@@ -594,7 +666,7 @@ function wireScoreChartHover(){
   if(!svg) return;
   const tip = document.getElementById('chartTip');
   const pts = [...state.tests].sort((a,b)=>a.date.localeCompare(b.date));
-  const vbW = Number(svg.dataset.w)||420, vbH = Number(svg.dataset.h)||160;
+  const vbW = Number(svg.dataset.w)||360, vbH = Number(svg.dataset.h)||150;
   function showTip(dot){
     const t = pts[Number(dot.dataset.i)];
     const rect = svg.getBoundingClientRect();
